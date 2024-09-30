@@ -126,7 +126,9 @@ public struct PermissionComponentsStore {
                                              title: "Siri",
                                              description: "Allow Siri to interact with app")
     
-
+    public var familyControlPermission = JMPermission(imageIcon: Image(systemName: "book.fill").typeErased(),
+                                            title: "ScreenTime",
+                                            description: "Allow ScreenTime to track your usage")
 }
 
 @available(iOS 13.0, tvOS 13.0, *)
@@ -189,6 +191,9 @@ extension PermissionComponentsStore {
         case .siri:
             modify(&self.siriPermission)
             return self.siriPermission
+        case .familyControl:
+            modify(&self.familyControlPermission)
+            return self.familyControlPermission
         }
     }
 }
