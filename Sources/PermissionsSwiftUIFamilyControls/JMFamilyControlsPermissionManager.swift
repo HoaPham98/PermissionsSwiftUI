@@ -10,28 +10,49 @@ import CorePermissionsSwiftUI
 import FamilyControls
 import Combine
 
-@available(iOS 16.0, tvOS 16.0, *)
+@available(iOS 15.0, tvOS 15.0, *)
 public extension PermissionManager {
     ///The `familyControls` permission allows the device's activity usage to be tracked
+    @available(iOS 16.0, *)
     static func familyControls(member: FamilyControlsMember) -> JMFamilyControlsPermissionManager {
         return JMFamilyControlsPermissionManager(role: member)
     }
+    
+    static var familyControls: JMFamilyControlsPermissionManager {
+        return JMFamilyControlsPermissionManager()
+    }
 }
 
-@available(iOS 16.0, tvOS 16.0, *)
+@available(iOS 15.0, tvOS 15.0, *)
 public final class JMFamilyControlsPermissionManager: PermissionManager {
     typealias authorizationStatus = FamilyControls.AuthorizationStatus
     typealias permissionManagerInstance = JMFamilyControlsPermissionManager
     
-    private let role: FamilyControls.FamilyControlsMember
+    @available(iOS 16.0, *)
+    private var _role: FamilyControls.FamilyControlsMember! {
+        return role as? FamilyControls.FamilyControlsMember
+    }
+    
+    private var role: Any? = nil
+    
     private var bag = Set<AnyCancellable>()
     
     private var currentStatus: FamilyControls.AuthorizationStatus = .notDetermined
     
+    @available(iOS 16.0, *)
     init(role: FamilyControls.FamilyControlsMember) {
         self.role = role
         super.init()
         
+        AuthorizationCenter.shared.$authorizationStatus
+            .sink { status in
+                self.currentStatus = status
+            }
+            .store(in: &bag)
+    }
+    
+    public override init() {
+        super.init()
         AuthorizationCenter.shared.$authorizationStatus
             .sink { status in
                 self.currentStatus = status
@@ -61,8 +82,20 @@ public final class JMFamilyControlsPermissionManager: PermissionManager {
         case .notDetermined:
             Task {
                 do {
-                    try await AuthorizationCenter.shared.requestAuthorization(for: role)
-                    completion(currentStatus == .approved, nil)
+                    if #available(iOS 16.0, *) {
+                        try await AuthorizationCenter.shared.requestAuthorization(for: _role)
+                        completion(currentStatus == .approved, nil)
+                    } else {
+                        AuthorizationCenter.shared.requestAuthorization { result in
+                            switch result {
+                            case .success(let success):
+                                completion(true, nil)
+                            case .failure(let failure):
+                                completion(false, failure)
+                            }
+                        }
+                    }
+                    
                 } catch let error {
                     completion(false, error)
                 }

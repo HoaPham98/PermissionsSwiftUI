@@ -11,7 +11,7 @@ import Introspect
 @available(iOS 13.0, tvOS 13.0, *)
 @usableFromInline struct ModalViewWrapper<Body: View>: View, CustomizableView {
     //store contains static configurations and customizations
-    @usableFromInline var store: PermissionStore
+    @State @usableFromInline var store: PermissionStore
     //schemaStore contains dynamically computed properties, and internal methods/properties
     @usableFromInline var schemaStore: PermissionSchemaStore
     //Keep track of whether modal as already been shown for 1st time
@@ -28,7 +28,7 @@ import Introspect
         return schemaStore.undeterminedPermissions
     }
     var shouldShowPermission: Binding<Bool>{
-        Binding(get: {
+        $store.shouldNeedRequestFamilyControls.combine(with: Binding(get: {
             //configStore.autoCheckAuth is added in newer version. autoCheckModalAuth is backward compatibility
             if (store.configStore.autoCheckAuth ||
                     (store.autoCheckModalAuth || store.autoCheckAlertAuth)) &&
@@ -39,7 +39,7 @@ import Introspect
             }
             //Always show the modal regardless of permission status
             return true
-        }, set: {_ in})
+        }, set: {_ in}))
     }
     @usableFromInline init(for bodyView: Body,
          showing: Binding<Bool>,

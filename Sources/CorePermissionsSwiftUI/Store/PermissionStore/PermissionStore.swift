@@ -7,6 +7,8 @@
 
 import Foundation
 import SwiftUI
+import FamilyControls
+import Combine
 
 //MARK: - Storage
 /**
@@ -31,7 +33,21 @@ public class PermissionStore: ObservableObject {
     public init(){}
     
     ///An  array of permissions that configures the permissions to request
-    public var permissions: [PermissionManager] = []
+    public var permissions: [PermissionManager] = [] {
+        didSet {
+            bag = []
+            if #available(iOS 15.0, *), permissions.contains(where: { $0.permissionType == .familyControl }) {
+                AuthorizationCenter.shared.$authorizationStatus
+                    .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
+                    .sink(receiveValue: { status in
+                        self.shouldNeedRequestFamilyControls = status != .approved
+                    })
+                    .store(in: &bag)
+            } else {
+                shouldNeedRequestFamilyControls = true
+            }
+        }
+    }
     
     //MARK: Configuration store
     ///Custom configurations that alters PermissionsSwiftUI view's behaviors
@@ -42,5 +58,9 @@ public class PermissionStore: ObservableObject {
      Customizable displayed component for each PermissionType (types of permission)
      */
     public var permissionComponentsStore = PermissionComponentsStore()
+    
+    @Published var shouldNeedRequestFamilyControls: Bool = false
+    
+    private var bag: Set<AnyCancellable> = []
 }
 

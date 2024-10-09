@@ -91,7 +91,7 @@ public enum PermissionType: Hashable, Equatable {
     ///Permission that allows app to control audio playback of the device
     @available(tvOS, unavailable) case music
     
-    @available(iOS 16.0, *) case familyControl
+    @available(iOS 15.0, *) case familyControl
 }
 
 
